@@ -6,12 +6,13 @@
 #define LCD_HEIGHT ((int)2)
 #define TRIG_PIN ((int)4)
 #define ECHO_PIN ((int)3)
+#define DISPLAY_OFFSET ((int) 5)
 
 
 LiquidCrystal_I2C lcd(0x27, LCD_WIDTH, 2);
 
-long data[2] = {0, 0};            // {inches, cm}
-
+long data[2] = {0, 0};            // {in, cm}
+long prev_data[2] = {0, 0};       // {in, cm}
 
 void setup() {
   Serial.begin(9600);
@@ -19,14 +20,17 @@ void setup() {
   pinMode(ECHO_PIN,INPUT_PULLUP);
   // initialize the lcd 
   lcd.init();
-  // Print a message to the LCD.
   lcd.backlight();
+  lcd.setCursor(1,0);
+  lcd.print("in: ");
+  lcd.setCursor(1,1);
+  lcd.print("cm: ");
 }
 
 void loop() {
   getPingData();
   printToLCD();
-  delay(100);
+  delay(500);
 }
 
 
@@ -60,7 +64,11 @@ void getPingData() {
   // STEP: Read Echo pin, returns time in ms
   duration = pulseIn(ECHO_PIN, HIGH);
 
-  // convert the time into a distance
+  // STEP: Save last data point
+  prev_data[0] = data[0];
+  prev_data[1] = data[1];
+  
+  // STEP: Convert the time into a distance
   data[0] = microsecondsToInches(duration);
   data[1] = microsecondsToCentimeters(duration);
 }
@@ -85,10 +93,29 @@ long microsecondsToCentimeters(long microseconds) {
 
 
 void printToLCD() {
-  lcd.setCursor(1,0);
-  lcd.print("in: ");
-  lcd.print(data[0]);
-  lcd.setCursor(1,1);
-  lcd.print("cm: ");
-  lcd.print(data[1]);
+  for(int row = 0; row<2; row++){
+    if(prev_data[row] > data[row]){
+      int prev_digits = countDigits(prev_data[row]);
+      int cur_digits = countDigits(data[row]);
+      clearLCD(DISPLAY_OFFSET + cur_digits, DISPLAY_OFFSET + prev_digits, row);
+    }
+    lcd.setCursor(DISPLAY_OFFSET,row);
+    lcd.print(data[row]);
+  }
+}
+
+void clearLCD(int col_start, int col_stop, int row){
+  for(int col=col_start; col<15; col++) {
+    lcd.setCursor(col, row);
+    lcd.print(" ");
+  }
+}
+
+int countDigits(long num) {
+  int count = 0;
+  while(num != 0){
+    num = num/10;
+    count++;
+  }
+  return count;
 }
