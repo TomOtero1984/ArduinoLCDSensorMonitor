@@ -30,6 +30,7 @@ void setup() {
 void loop() {
   getPingData();
   printToLCD();
+  serialSendDataValues();
   delay(500);
 }
 
@@ -118,4 +119,13 @@ int countDigits(long num) {
     count++;
   }
   return count;
+}
+
+void serialSendDataValues(){
+  Serial.write("{");
+  Serial.write("\"in\" : ");
+  Serial.print(data[0]);
+  Serial.write(", \"cm\" : ");
+  Serial.print(data[1]);
+  Serial.write("}\n");
 }
