@@ -1,31 +1,152 @@
-const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database(':memory:', (err) => {
-    if (err){
-        return console.error(err.message);
+class DataHandler {
+    constructor() {
+        this.sqlite3 = require('sqlite3').verbose();
+        this.db_filepath = `data/sensor_readings.db`;
+        this.db;
+        this.table_names = [];
+        this.values = [];
+        this.column_name = "data";
+        this.datatype = "TEXT";
+        this.date = new Date();
+        this.sql_count = 0;
+        
+    };
+
+    generate_table_name() {
+        var name = `sensor_readings_${this.date.getDate()}${this.date.getMonth()+1}${this.date.getFullYear()}`;
+        console.log(name);
+        return name;
     }
-    console.log('Connected to the in-memory SQlite database.');
-});
+
+    set_table_name() {
+        var name = this.generate_table_name();
+        this.table_name = name;
+    }
+
+    set_column_name(name) {
+        this.column_name = name;
+    }
+
+    set_datatype(type) {
+        this.datatype = "TEXT";
+    }
 
 
-function DataHandler() {
-    this.values = [];
-    this.checkValues = () =>{
+    checkValues() {
         console.log(this.values);
-    }
+    };
 
-    this.database_init = () => {
-        const sqlite3 = require('sqlite3').verbose();
-        this.db = new sqlite3.Database(':memory:', (err) => {
+    build() {
+        return new Promise((resolve) => {
+
+            this.db = new this.sqlite3.Database(this.db_filepath, (err) => {
+                if (err) {
+                    return console.error(err.message);
+                }
+                console.log(`Connected to the ${this.db_filepath} SQlite database.`);
+                resolve(true);
+            });
+        });
+    };
+
+    database_close() {
+        this.db.close((err) => {
             if (err) {
                 return console.error(err.message);
             }
-            console.log('Connected to the in-memory SQlite database.');
+            console.log('Close the database connection.');
         });
+    };
+
+    database_get_tables() {
+        return new Promise((resolve) => {
+            this.db.all(`SELECT name FROM sqlite_master;'`, (err, res) => {
+                if (err) {
+                    return console.error(err.message);
+                }
+                for (let i = 0; i < res.length; i++) {
+                    this.table_names[i] = res[i]["name"];
+                }
+                resolve(true)
+            });
+
+        });
+    };
+
+    database_create_table(table_name) {
+        return new Promise((resolve) => {
+            if (!this.table_names.includes(table_name)) {
+                console.log(`Creating TABLE ${table_name}`)
+                this.db.run(`CREATE TABLE ${table_name} 
+                            (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                             data TEXT);`,
+                    (err, res) => {
+                        if (err) {
+                            return console.error(`[database_create_table]: ${err.message}`)
+                        }
+                        if (res) {
+                            return console.log(`[database_create_table]: ${res.message}`)
+                        }
+                    });
+                return;
+            }
+            console.log(`Table ${table_name} already exists`);
+            resolve(true)
+        })
+    };
+
+    database_get_columns(table_name) {
+        return new Promise((resolve) => {
+            this.db.all(`PRAGMA table_info(${table_name});`, (err, res) => {
+                if (err) {
+                    return console.error(`[database_get_columns]: ${err.message}`);
+                }
+                for (let i = 0; i < res.length; i++) {
+                    this.column_names[i] = res[i]["name"];
+                }
+                resolve(true)
+            });
+
+        });
+    };
+
+
+    // database_add_column(table_name, column_name, datatype) {
+    //     if (!this.column_names.includes(column_name)) {
+    //         this.db.run(`ALTER TABLE ${table_name}
+    //                      ADD COLUMN ? ?;`,
+    //             [column_name, datatype],
+    //             (err) => {
+    //                 return console.error(`[database_add_column]: ${err.message}`)
+    //             });
+    //         return
+    //     }
+    //     console.log(`Column ${column_name} already exists`);
+    // };
+
+    database_insert_data(data) {
+        this.db.run(`INSERT INTO ${this.table_name}(${this.column_name})
+                     VALUES('${data}');`);
     }
 
-    this.database_close = () => {
-        this.db.close
+    // database_read_column(table_name, column_name) {
+    //     this.db.run(`SELECT ${column_name} from ${table_name}`)
+    // }
+
+    database_reduce_table_by_range(table_name, column_name,
+        range_start, range_end) {
+        this.db.run(`DELETE from ${this.table_name}
+                     WHERE ${this.column_name} BETWEEN ${range_start} 
+                     and ${range_end}`)
     }
+
+    database_get_count(table_name, column_name) {
+        this.db.get(`SELECT COUNT(${column_name}) FROM ${table_name};`, (err, res) => {
+            this.sql_count = res
+            console.log(res)
+        })
+    }
+
 }
 
 module.exports = {

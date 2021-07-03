@@ -1,8 +1,8 @@
-
+var json_data;
 module.exports = {
     arduino: (data_handler) => {
+        var count
         // Setting up SerialPort
-        const { logData } = require('./index')
         const SerialPort = require('serialport');
         const port = new SerialPort('COM9', { baudRate: 9600, autoOpen: false });
         // Setting up parser
@@ -11,9 +11,17 @@ module.exports = {
         // Routing port and parser
         port.pipe(parser)
         parser.on('data', (data) => {
-            data_handler.values.push(data);
-            // logData(data_handler);
-            data_handler.checkValues();
+            json_data = JSON.parse(data)
+            console.log(json_data)
+            json_data_str = JSON.stringify(json_data)
+            data_handler.database_insert_data(json_data_str)
+            sql_count = data_handler.database_get_count(
+                data_handler.table_name,
+                "id"
+            )
+            console.log(`count = ${data_handler.sql_count}`)
+            // data_handler.values.push(data);
+            // data_handler.checkValues();
         });
         // Opening port
         try {

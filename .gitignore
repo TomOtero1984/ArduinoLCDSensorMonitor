@@ -1,1 +1,3 @@
 node_modules
+src/node/ArduinoLCDSensorMonitorNODE/data
+src/node/ArduinoLCDSensorMonitorNODE/temp
