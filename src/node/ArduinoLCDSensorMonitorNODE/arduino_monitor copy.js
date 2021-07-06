@@ -1,5 +1,7 @@
-class Arduino {
-    constructor(data_handler, server) {
+
+module.exports = {
+    arduino: (data_handler, server) => {
+        var json_data
         // Setting up SerialPort
         const SerialPort = require('serialport')
         const port = new SerialPort('COM9', { baudRate: 9600, autoOpen: false })
@@ -9,8 +11,8 @@ class Arduino {
         // Routing port and parser
         port.pipe(parser)
         parser.on('data', (data) => {
-            var json_data = JSON.parse(data)
-            var json_data_str = JSON.stringify(json_data)
+            json_data = JSON.parse(data)
+            json_data_str = JSON.stringify(json_data)
             json_data_str = json_data_str.replace(`{`, `{"count":${data_handler.data_readings.length},`)
             console.log(json_data_str)
             data_handler.data_readings_push(json_data_str)
@@ -20,11 +22,8 @@ class Arduino {
                     // console.log(`[DEBUG] ${data_handler.data_readings[idx]}`)
                     data_handler.database_insert_data(data_handler.data_readings[idx])
                 }
-                data_handler.database_get_data()
-                data_handler.set_d3_data()
-                // console.log(`[DEBUG][ARDUINO] ${data_handler.d3_data}`)
-                server.send_msg(data_handler.d3_data)
                 data_handler.sql_count = data_handler.database_get_count()
+                // data_handler.data_readings_to_d3_data()
                 data_handler.data_readings_clear()
             }
 
@@ -38,12 +37,8 @@ class Arduino {
         catch (err) {
             console.log(err)
         }
-    }
-    printData(data_handler) {
+    },
+    printData: (data_handler) => {
         console.log(data_handler.values)
-    }
-}
-
-module.exports = {
-    Arduino: Arduino,
+    },
 }

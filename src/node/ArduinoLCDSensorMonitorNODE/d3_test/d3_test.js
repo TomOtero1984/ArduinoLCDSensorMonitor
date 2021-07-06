@@ -1,8 +1,5 @@
-const { Arduino } = require("./arduino_monitor")
-const { Server } = require("./server")
-const { DataHandler } = require("./data_handler")
-// const { myEmitter } = require("./event_listener")
-// const { Client }    = require("./client")
+const { DataHandler } = require("../data_handler")
+
 
 async function data_handler_setup(data_handler) {
     await data_handler.build()
@@ -15,16 +12,18 @@ async function data_handler_setup(data_handler) {
 
 async function init_d3_data(data_handler) {
     await data_handler.database_get_data()
+    data_handler.d3_data = data_handler.db_results
+    for (var idx in data_handler.d3_data) {
+        // console.log(`[DEBUG] d3 keys = ${Object.keys(data_handler.d3_data[idx])}`)
+        data_handler.d3_data[idx] = JSON.parse(data_handler.d3_data[idx]["data"])
+        // console.log(`[DEBUG] d3 data = ${Object.keys(data_handler.d3_data[idx])}`)
+    }
 }
-
 
 async function main() {
     var data_handler = new DataHandler
     await data_handler_setup(data_handler)
     await init_d3_data(data_handler)
-    var server = new Server(data_handler)
-    // var client = new Client()
-    var arduino = new Arduino(data_handler, server)
 }
 
 main()

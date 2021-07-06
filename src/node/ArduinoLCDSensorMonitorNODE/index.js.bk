@@ -1,0 +1,40 @@
+const { arduino } = require("./arduino_monitor")
+const { server } = require("./server")
+const { DataHandler } = require("./data_handler")
+const { myEmitter } = require("./event_listener")
+
+async function data_handler_setup(data_handler) {
+    data_handler.build().then(() => {
+        data_handler.set_table_name()
+        console.log(data_handler.table_name)
+    }).then(() => {
+        data_handler.database_get_tables()
+            .then((get_flag) => {
+                if (get_flag === true) {
+                    console.log(`flag = ${get_flag}`)
+                    console.log(`res = ${data_handler.table_names}`)
+                }
+            }).then(() => {
+                data_handler.database_create_table(data_handler.table_name)
+            })
+    })
+}
+
+async function init_d3_data(data_handler) {
+    data_handler.database_get_data()
+}
+
+
+function main() {
+    var data_handler = new DataHandler
+    data_handler_setup(data_handler)
+        .then(() => {
+            init_d3_data(data_handler)
+        })
+        .then(() => {
+            arduino(data_handler)
+        })
+    server()
+}
+
+main()
